@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Présentation Interactive : L'IA dans l'Entreprise</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            background-color: #00000a;
+            color: #e2e8f0;
+        }
+
+        /* Adds a subtle radial gradient behind the canvas for depth */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 150vw;
+            height: 150vh;
+            background: radial-gradient(circle, rgba(10, 20, 41, 0.8) 0%, rgba(0,0,10,0) 60%);
+            transform: translate(-50%, -50%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        #interactive-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        .content-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .content-panel, .intro-panel, .conclusion-panel, .control-button {
+            pointer-events: all;
+        }
+        
+        /* Enhanced Glassmorphism effect */
+        .glassmorphism {
+            background: rgba(10, 15, 25, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        /* Title text shadow for better readability */
+        .title-glow {
+            text-shadow: 0 0 8px rgba(59, 130, 246, 0.6), 0 0 20px rgba(96, 165, 250, 0.4);
+        }
+
+        /* Use case card transitions */
+        .use-case-card .details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.7s ease-in-out, padding 0.5s ease;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+
+        .use-case-card.open .details {
+            max-height: 1000px; /* Large enough value */
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+        
+        /* Fade-in animation for UI elements */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div id="interactive-canvas"></div>
+
+    <div class="content-overlay">
+        <!-- Intro Panel -->
+        <div id="intro-panel" class="intro-panel absolute inset-0 flex flex-col justify-center items-center bg-black bg-opacity-70 transition-opacity duration-1000">
+            <div class="text-center p-4">
+                <h1 class="text-4xl md:text-6xl font-bold text-white mb-4 title-glow">Bienvenue dans</h1>
+                <h2 class="text-5xl md:text-7xl font-extrabold text-blue-400 mb-8 title-glow">L'Entreprise Augmentée</h2>
+                <p class="text-slate-300 text-lg md:text-xl max-w-2xl mx-auto mb-12">Découvrez comment l'IA devient le nouveau système nerveux de la performance.</p>
+                <button id="start-btn" class="control-button px-8 py-4 bg-blue-600 text-white font-semibold rounded-full shadow-lg hover:bg-blue-700 transition-all transform hover:scale-105 hover:shadow-blue-500/50">
+                    Explorer la Galaxie de l'Entreprise
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content Panel (hidden by default) -->
+        <div id="content-panel" class="content-panel absolute top-0 left-0 h-full w-full md:w-[450px] lg:w-[500px] p-4 md:p-6 overflow-y-auto transform -translate-x-full transition-transform duration-700 ease-in-out glassmorphism">
+            <button id="close-panel-btn" class="control-button absolute top-4 right-4 text-slate-400 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            <div id="panel-content">
+                <!-- Content will be injected here -->
+            </div>
+        </div>
+
+        <!-- Conclusion Panel -->
+        <div id="conclusion-panel" class="conclusion-panel absolute inset-0 flex flex-col justify-center items-center bg-black bg-opacity-90 transition-opacity duration-1000 opacity-0 pointer-events-none">
+            <div class="text-center p-4">
+                <h2 class="text-5xl md:text-7xl font-extrabold text-blue-400 mb-8 title-glow">Le Système Nerveux Global</h2>
+                <p class="text-slate-300 text-lg md:text-xl max-w-3xl mx-auto mb-12">
+                    Chaque département, processus et décision sont désormais interconnectés et amplifiés par l'IA. Ce n'est plus une collection de services, mais un organisme unifié, apprenant et adaptatif. L'IA est le catalyseur de la prochaine ère de croissance, d'efficacité et d'innovation.
+                </p>
+                <button id="restart-btn" class="control-button px-8 py-4 bg-blue-600 text-white font-semibold rounded-full shadow-lg hover:bg-blue-700 transition-all transform hover:scale-105 hover:shadow-blue-500/50">
+                    Réexplorer
+                </button>
+            </div>
+        </div>
+        
+        <button id="show-conclusion-btn" class="hidden control-button absolute bottom-8 right-8 px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-lg hover:bg-blue-700 transition-all transform hover:scale-105 hover:shadow-blue-500/50 pointer-events-all">
+            Vision Finale
+        </button>
+    </div>
+
+    <script type="module">
+        // --- DATA ---
+        const aiData = {
+            "Direction générale": {
+                icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>`,
+                cases: [
+                    { title: "Aide à la Décision Stratégique", problem: "Les décisions stratégiques sont basées sur des données historiques statiques et l'intuition.", solution: "Une IA analyse en continu les données internes et externes (marché, concurrence) pour modéliser des scénarios futurs et recommander des actions.", apportIA: "Fournit des insights prédictifs pour des décisions plus rapides et éclairées, réduisant les risques.", kpis: [{ label: "Précision Prévisions", value: "+30%", type: "increase" }, { label: "Rapidité Décision", value: "-50%", type: "decrease" }], aiType: ["Analyse Prédictive", "ML"], aiTech: ["Tableau", "PowerBI + AI"], videoUrl: "https://www.youtube.com/watch?v=S2M5-6-hS9E" },
+                    { title: "Veille Concurrentielle Augmentée", problem: "Veille manuelle et lente, risque de manquer des signaux faibles importants.", solution: "Un agent IA surveille 24/7 des milliers de sources (presse, réseaux sociaux, sites web) pour détecter et synthétiser les actions des concurrents.", apportIA: "Permet une réactivité quasi-instantanée aux mouvements du marché et aux stratégies concurrentes.", kpis: [{ label: "Détection Signaux", value: "+80%", type: "increase" }, { label: "Temps d'analyse", value: "-90%", type: "decrease" }], aiType: ["NLP", "Web Scraping"], aiTech: ["Brandwatch", "Meltwater"] }
+                ]
+            },
+            "Communication & Marketing": {
+                icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`,
+                cases: [
+                    { title: "Hyper-personnalisation des Campagnes", problem: "Messages marketing génériques avec un faible taux d'engagement.", solution: "Un moteur IA analyse les données clients pour générer des emails, publicités et contenus web uniques pour chaque individu.", apportIA: "Augmentation massive de la pertinence des messages, conduisant à une meilleure fidélisation et des ventes accrues.", kpis: [{ label: "Taux de Conversion", value: "+45%", type: "increase" }, { label: "Taux d'Engagement", value: "+70%", type: "increase" }], aiType: ["LLM", "Machine Learning"], aiTech: ["GPT-4", "Salesforce Marketing Cloud"], videoUrl: "https://www.youtube.com/watch?v=2e_4h4qVl3g" },
+                    { title: "Optimisation du Budget Média", problem: "Allocation inefficace des dépenses publicitaires sur de multiples canaux.", solution: "Un algorithme de ML réalloue dynamiquement les budgets vers les canaux les plus rentables en temps réel.", apportIA: "Maximisation du ROI publicitaire sans augmenter les dépenses globales.", kpis: [{ label: "ROI Média", value: "+35%", type: "increase" }, { label: "Efficacité budgétaire", value: "+25%", type: "increase" }], aiType: ["Machine Learning"], aiTech: ["TensorFlow", "Google Analytics API"] },
+                    { title: "Génération de Contenu Automatisée", problem: "Création de contenu (articles de blog, posts sociaux) lente et coûteuse.", solution: "Des LLMs créent des ébauches de textes optimisés SEO ou des variations de messages publicitaires.", apportIA: "Accélération drastique de la production de contenu, permettant de tester plus de messages.", kpis: [{ label: "Coût par contenu", value: "-60%", type: "decrease" }, { label: "Volume de production", value: "+300%", type: "increase" }], aiType: ["LLM", "Generative AI"], aiTech: ["Jasper.ai", "Copy.ai"], videoUrl: "https://www.youtube.com/watch?v=S2E6A-S01-c" }
+                ]
+            },
+            "Service Commercial": {
+                icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg>`,
+                cases: [
+                    { title: "Lead Scoring Prédictif", problem: "Les équipes commerciales perdent du temps sur des prospects peu qualifiés.", solution: "L'IA attribue un score de conversion à chaque prospect, permettant de se concentrer sur les plus prometteurs.", apportIA: "Focalise l'effort commercial sur les leads à plus forte valeur, augmentant le taux de conversion.", kpis: [{ label: "Taux de Conversion", value: "+40%", type: "increase" }, { label: "Productivité Équipe", value: "+30%", type: "increase" }], aiType: ["ML", "Analyse Prédictive"], aiTech: ["Salesforce Einstein", "HubSpot AI"], videoUrl: "https://www.youtube.com/watch?v=7D9_034iL2A" },
+                    { title: "Automatisation de la Saisie CRM", problem: "Saisie manuelle fastidieuse et source d'erreurs dans le CRM.", solution: "L'IA analyse les emails, calendriers et appels pour remplir et mettre à jour automatiquement les fiches clients.", apportIA: "Libère les vendeurs des tâches administratives pour plus de temps de vente effectif.", kpis: [{ label: "Temps Administratif", value: "-95%", type: "decrease" }, { label: "Qualité Données CRM", value: "+80%", type: "increase" }], aiType: ["NLP", "RPA"], aiTech: ["UiPath", "Zapier"] },
+                    { title: "Coaching Commercial par IA", problem: "Le coaching des vendeurs est subjectif et non scalable.", solution: "Une IA analyse les enregistrements d'appels de vente pour identifier les meilleures pratiques et fournir un feedback personnalisé.", apportIA: "Améliore la performance de toute l'équipe en diffusant les techniques qui fonctionnent.", kpis: [{ label: "Durée cycle de vente", value: "-15%", type: "decrease" }, { label: "Performance moyenne", value: "+20%", type: "increase" }], aiType: ["Analyse Conversationnelle", "NLP"], aiTech: ["Gong.io", "Chorus.ai"] }
+                ]
+            },
+            "Service Client": {
+                icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`,
+                cases: [
+                    { title: "Chatbots & Voicebots Intelligents", problem: "Temps d'attente longs et support client surchargé.", solution: "Des agents conversationnels IA gèrent 80% des requêtes standards 24/7, ne transférant que les cas complexes.", apportIA: "Fournit une réponse instantanée et constante aux clients, améliorant leur satisfaction.", kpis: [{ label: "Taux d'automatisation", value: "80%", type: "increase" }, { label: "Satisfaction Client", value: "+25%", type: "increase" }], aiType: ["LLM", "NLP", "TTS"], aiTech: ["Google Dialogflow", "Rasa"], videoUrl: "https://www.youtube.com/watch?v=E_hq3m2YfeI" },
+                    { title: "Analyse des Sentiments Clients", problem: "Difficulté à mesurer et réagir à l'insatisfaction client.", solution: "L'IA analyse toutes les interactions (appels, emails, chats) pour détecter les émotions et alerter les managers.", apportIA: "Permet d'identifier proactivement les clients à risque et de réduire le 'churn' (attrition).", kpis: [{ label: "Taux de Rétention", value: "+15%", type: "increase" }, { label: "Détection Proactive", value: "+90%", type: "increase" }], aiType: ["NLP", "Analyse Sentiments"], aiTech: ["BERT", "AWS Comprehend"] },
+                    { title: "Routing Intelligent des Tickets", problem: "Les tickets de support sont assignés manuellement, créant des délais.", solution: "L'IA analyse le contenu de chaque ticket et l'attribue automatiquement au meilleur agent disponible.", apportIA: "Réduit le temps de première réponse et le temps de résolution global.", kpis: [{ label: "Temps 1ère réponse", value: "-60%", type: "decrease" }, { label: "Résolution 1er contact", value: "+20%", type: "increase" }], aiType: ["NLP", "Classification"], aiTech: ["Zendesk AI", "Intercom"] }
+                ]
+            },
+            "Ressources Humaines (RH)": {
+                icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`,
+                cases: [
+                    { title: "Tri Intelligent des CVs", problem: "Recruteurs submergés par des centaines de CVs pour un seul poste.", solution: "L'IA analyse et classe automatiquement les CVs en fonction de leur adéquation avec le poste, réduisant les biais.", apportIA: "Accélère le recrutement et améliore la qualité des candidats présélectionnés.", kpis: [{ label: "Temps de présélection", value: "-80%", type: "decrease" }, { label: "Qualité des embauches", value: "+30%", type: "increase" }], aiType: ["NLP", "Classification"], aiTech: ["Textkernel", "Paradox.ai"] },
+                    { title: "Analyse du Risque de Départ", problem: "Départ inattendu de talents clés, coût et perte de savoir-faire.", solution: "Un modèle de ML identifie les employés à risque de départ, permettant aux RH de prendre des mesures proactives.", apportIA: "Permet de retenir les talents en agissant avant qu'il ne soit trop tard.", kpis: [{ label: "Taux de turnover", value: "-25%", type: "decrease" }, { label: "Précision détection", value: "80%", type: "increase" }], aiType: ["ML", "Analyse Prédictive"], aiTech: ["Visier", "Workday"] },
+                    { title: "Onboarding Personnalisé", problem: "Processus d'intégration générique et peu engageant pour les nouveaux employés.", solution: "Une IA crée un parcours d'intégration personnalisé (formations, rencontres) basé sur le profil du nouvel arrivant.", apportIA: "Améliore l'engagement et la productivité des nouveaux employés dès les premiers jours.", kpis: [{ label: "Engagement Nouveaux", value: "+40%", type: "increase" }, { label: "Temps de productivité", value: "-30%", type: "decrease" }], aiType: ["ML", "Système de Recommandation"], aiTech: ["SAP SuccessFactors", "Oracle HCM"] }
+                ]
+            },
+            "Finance / Comptabilité": {
+                icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>`,
+                cases: [
+                   { title: "Détection de Fraude en Temps Réel", problem: "Fraude (paiements, notes de frais) difficile à détecter avec des méthodes traditionnelles.", solution: "L'IA analyse des millions de transactions pour identifier des schémas de fraude subtils et des anomalies.", apportIA: "Réduit les pertes financières et améliore la conformité réglementaire.", kpis: [{ label: "Pertes par fraude", value: "-70%", type: "decrease" }, { label: "Taux de détection", value: "+50%", type: "increase" }], aiType: ["ML", "Détection d'anomalies"], aiTech: ["Feedzai", "Shift Technology"] },
+                   { title: "Clôture Comptable Augmentée", problem: "Processus de clôture mensuelle long, manuel et stressant.", solution: "L'IA automatise les réconciliations, identifie les anomalies et prépare les écritures pour une clôture plus rapide.", apportIA: "Accélère le 'fast close' et libère les équipes pour des tâches à plus forte valeur ajoutée.", kpis: [{ label: "Temps de clôture", value: "-40%", type: "decrease" }, { label: "Ajustements manuels", value: "-60%", type: "decrease" }], aiType: ["RPA", "ML"], aiTech: ["BlackLine", "Workiva"], videoUrl: "https://www.youtube.com/watch?v=R9QcO_a_y2I" },
+                   { title: "Automatisation du Traitement des Factures", problem: "Saisie manuelle des données des factures fournisseurs, source d'erreurs et de retards.", solution: "Une IA (OCR + NLP) lit, comprend et extrait automatiquement les données des factures pour les intégrer dans l'ERP.", apportIA: "Élimine la saisie manuelle, accélère les paiements et réduit les coûts de traitement.", kpis: [{ label: "Coût de traitement", value: "-80%", type: "decrease" }, { label: "Temps de traitement", value: "-90%", type: "decrease" }], aiType: ["OCR", "NLP"], aiTech: ["Kofax", "ABBYY"] }
+                ]
+            },
+            "Opérations / Production": {
+                icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path><path d="M17.5 9.5 16 11l-1.5-1.5"></path></svg>`,
+                cases: [
+                    { title: "Contrôle Qualité par Vision", problem: "Contrôle qualité manuel lent et sujet à l'erreur humaine.", solution: "Des caméras couplées à une IA inspectent 100% des produits, détectant des défauts invisibles à l'œil nu.", apportIA: "Atteint un niveau de qualité proche de la perfection et réduit drastiquement les rebuts.", kpis: [{ label: "Taux de défauts", value: "-90%", type: "decrease" }, { label: "Vitesse d'inspection", value: "+1000%", type: "increase" }], aiType: ["Computer Vision"], aiTech: ["Cognex", "YOLOv8"], videoUrl: "https://www.youtube.com/watch?v=Wg9m523aYv4" },
+                    { title: "Maintenance Prédictive", problem: "Pannes imprévues des machines entraînant des arrêts coûteux.", solution: "Des capteurs IoT et du ML analysent les signaux (vibrations, température) pour prédire une panne avant qu'elle ne se produise.", apportIA: "Maximise la disponibilité des équipements et réduit les coûts de maintenance.", kpis: [{ label: "Arrêts non planifiés", value: "-75%", type: "decrease" }, { label: "Coûts maintenance", value: "-30%", type: "decrease" }], aiType: ["ML", "Analyse Prédictive", "IoT"], aiTech: ["AWS Lookout", "Azure IoT"] },
+                    { title: "Optimisation des Paramètres de Production", problem: "Les réglages des machines sont souvent sous-optimaux et basés sur l'expérience passée.", solution: "L'IA analyse les données de production pour trouver les paramètres optimaux qui maximisent le rendement ou minimisent la consommation d'énergie.", apportIA: "Améliore l'efficacité globale de la production (OEE) et la durabilité.", kpis: [{ label: "Rendement", value: "+5%", type: "increase" }, { label: "Consommation énergie", value: "-10%", type: "decrease" }], aiType: ["Machine Learning", "Optimisation"], aiTech: ["Siemens Mindsphere", "ThingWorx"] }
+                ]
+            },
+            "Informatique / IT": {
+                icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>`,
+                cases: [
+                    { title: "Détection d'Anomalies de Sécurité (AIOps)", problem: "Les équipes de cybersécurité sont noyées sous un flot d'alertes, rendant la détection des vraies menaces difficile.", solution: "L'IA analyse les logs et le trafic réseau pour distinguer les vraies menaces du bruit et prédire les attaques.", apportIA: "Améliore la posture de sécurité en détectant les menaces plus rapidement et avec plus de précision.", kpis: [{ label: "Temps de détection", value: "-85%", type: "decrease" }, { label: "Faux positifs", value: "-90%", type: "decrease" }], aiType: ["ML", "Détection d'anomalies"], aiTech: ["Splunk", "Datadog", "Darktrace"] },
+                    { title: "Automatisation du Support Technique N1", problem: "Le support IT est engorgé par des requêtes simples et répétitives (ex: reset de mot de passe).", solution: "Un chatbot ou un voicebot intégré à l'outil de ticketing gère les demandes de niveau 1 de manière autonome.", apportIA: "Libère les techniciens IT pour qu'ils se concentrent sur les problèmes complexes.", kpis: [{ label: "Tickets N1 automatisés", value: "70%", type: "increase" }, { label: "Satisfaction employés", value: "+30%", type: "increase" }], aiType: ["Chatbot", "NLP", "RPA"], aiTech: ["ServiceNow Virtual Agent", "Microsoft Power Virtual Agents"] },
+                    { title: "Optimisation des Ressources Cloud", problem: "Les dépenses cloud sont difficiles à contrôler, avec beaucoup de gaspillage de ressources.", solution: "Un outil AIOps analyse la consommation pour recommander ou appliquer automatiquement des redimensionnements ou des arrêts de ressources.", apportIA: "Réduit significativement la facture cloud sans impacter la performance des applications.", kpis: [{ label: "Facture Cloud", value: "-25%", type: "decrease" }, { label: "Gaspillage", value: "-80%", type: "decrease" }], aiType: ["AIOps", "ML"], aiTech: ["CloudHealth", "Apptio Cloudability"] }
+                ]
+            },
+            "Logistique / Supply Chain": {
+                icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9.5l4 2.5v11l-4-2.5v-11Z"></path><path d="M14 12v11l-4-2.5v-11L14 12Z"></path><path d="M6 12l8-5-8-5-8 5 8 5Z"></path><path d="M22 9.5l-4 2.5v11l4-2.5v-11Z"></path><path d="M10 12l8-5-4-2.5-4 2.5-4 2.5 4 2.5Z"></path></svg>`,
+                cases: [
+                    { title: "Optimisation des Tournées de Livraison", problem: "Les plans de route sont souvent statiques et ne s'adaptent pas aux conditions réelles (trafic, nouvelles commandes).", solution: "L'IA calcule en temps réel les itinéraires optimaux pour chaque livreur en intégrant de multiples contraintes.", apportIA: "Réduit les coûts de transport (carburant, temps) et améliore la satisfaction client.", kpis: [{ label: "Distance parcourue", value: "-15%", type: "decrease" }, { label: "Ponctualité livraison", value: "+20%", type: "increase" }], aiType: ["Optimisation", "ML"], aiTech: ["HERE Technologies", "Google OR-Tools"] },
+                    { title: "Prévision de la Demande", problem: "Les prévisions basées sur de simples moyennes historiques sont imprécises et causent des ruptures ou des surstocks.", solution: "Le Machine Learning analyse des centaines de variables (météo, promotions, tendances sociales) pour des prévisions plus fines.", apportIA: "Améliore drastiquement la précision des prévisions, optimisant ainsi toute la chaîne logistique.", kpis: [{ label: "Erreur de prévision", value: "-40%", type: "decrease" }, { label: "Ruptures de stock", value: "-50%", type: "decrease" }], aiType: ["ML", "Time Series"], aiTech: ["SAP IBP", "Oracle Demantra"] },
+                    { title: "Gestion Intelligente des Stocks", problem: "Définir les niveaux de stock optimaux pour des milliers de produits est un casse-tête.", solution: "L'IA recommande les niveaux de stock de sécurité et les points de commande optimaux pour chaque article et entrepôt.", apportIA: "Minimise les coûts de stockage tout en garantissant la disponibilité des produits.", kpis: [{ label: "Coût de possession stock", value: "-20%", type: "decrease" }, { label: "Taux de service", value: "+10%", type: "increase" }], aiType: ["ML", "Optimisation"], aiTech: ["NetSuite", "Anaplan"] }
+                ]
+            },
+            "Service Juridique": {
+                icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6s1.5-2 5-2 5 2 5 2v14H2V6Z"></path><path d="M14 6s1.5-2 5-2 5 2 5 2v14H14V6Z"></path></svg>`,
+                cases: [
+                    { title: "Analyse et Révision de Contrats", problem: "La révision manuelle de contrats est lente, coûteuse et sujette à l'erreur humaine.", solution: "Une IA entraînée sur des milliers de contrats analyse les nouveaux documents pour identifier les clauses à risque, manquantes ou non-standard.", apportIA: "Accélère la revue de contrats par un facteur 10 et réduit les risques juridiques.", kpis: [{ label: "Temps de revue", value: "-90%", type: "decrease" }, { label: "Risques non détectés", value: "-75%", type: "decrease" }], aiType: ["NLP", "Classification"], aiTech: ["Luminance", "Kira Systems"] },
+                    { title: "Recherche Juridique Augmentée (e-Discovery)", problem: "Trouver les documents pertinents dans des millions de fichiers pour un litige (e-discovery) est une tâche titanesque.", solution: "L'IA comprend le langage naturel et aide à trouver les documents les plus pertinents beaucoup plus rapidement qu'une recherche par mots-clés.", apportIA: "Réduit drastiquement les coûts et le temps associés aux phases de découverte des litiges.", kpis: [{ label: "Coût e-Discovery", value: "-50%", type: "decrease" }, { label: "Pertinence résultats", value: "+60%", type: "increase" }], aiType: ["NLP", "Recherche Sémantique"], aiTech: ["Relativity", "Everlaw"] }
+                ]
+            },
+            "Achats": {
+                icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 100 20 10 10 0 100-20z"></path><path d="M12 18a6 6 0 100-12 6 6 0 100 12z"></path><path d="M12 12v-4"></path></svg>`,
+                cases: [
+                    { title: "Analyse Prédictive des Dépenses", problem: "Manque de visibilité sur les dépenses futures et les opportunités d'économies.", solution: "L'IA analyse les données de dépenses pour identifier les gaspillages, les opportunités de regroupement et prédire les dépenses futures.", apportIA: "Permet de prendre des décisions d'achat proactives et de maximiser les économies.", kpis: [{ label: "Économies réalisées", value: "+10%", type: "increase" }, { label: "Dépenses hors contrat", value: "-30%", type: "decrease" }], aiType: ["ML", "Analyse Prédictive"], aiTech: ["Coupa", "SAP Ariba"] },
+                    { title: "Optimisation de la Sélection Fournisseurs", problem: "Le choix d'un fournisseur est souvent basé sur des critères limités (prix) et des relations existantes.", solution: "L'IA évalue les fournisseurs sur des centaines de critères (performance, risque, RSE, innovation) pour recommander le meilleur partenaire.", apportIA: "Assure un choix de fournisseur plus robuste et aligné avec la stratégie globale de l'entreprise.", kpis: [{ label: "Risque fournisseur", value: "-25%", type: "decrease" }, { label: "Performance fournisseur", value: "+15%", type: "increase" }], aiType: ["ML", "Scoring"], aiTech: ["Ivalua", "Zycus"] }
+                ]
+            },
+            "Services Administratifs": {
+                icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"></path><path d="M10 21v-4a2 2 0 012-2h4"></path><path d="M4 11a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4z"></path></svg>`,
+                cases: [
+                    { title: "Gestion Intelligente des Documents", problem: "Les employés perdent un temps précieux à chercher des informations dans des milliers de documents non structurés.", solution: "L'IA indexe et comprend le contenu de tous les documents (PDF, Word, etc.) pour permettre une recherche en langage naturel.", apportIA: "Transforme les partages de fichiers en une base de connaissance intelligente et accessible.", kpis: [{ label: "Temps de recherche doc", value: "-70%", type: "decrease" }, { label: "Utilisation des documents", value: "+50%", type: "increase" }], aiType: ["NLP", "OCR", "Recherche Sémantique"], aiTech: ["Microsoft Syntex", "Elasticsearch"] },
+                    { title: "Automatisation de la Planification", problem: "Organiser une réunion avec plusieurs participants internes et externes est un cauchemar logistique.", solution: "Un assistant IA se connecte aux calendriers de chacun et gère les allers-retours par email pour trouver le créneau parfait.", apportIA: "Élimine une des tâches les plus chronophages et frustrantes de la vie de bureau.", kpis: [{ label: "Temps de planification", value: "-95%", type: "decrease" }, { label: "Satisfaction", value: "+60%", type: "increase" }], aiType: ["NLP", "Optimisation"], aiTech: ["Clockwise", "Reclaim.ai"] }
+                ]
+            }
+        };
+
+
+        // --- THREE.JS SETUP ---
+        let scene, camera, renderer, nodes = [], lines = [], particles, nebula, twinklingStars, shootingStars, pulseParticles = [];
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let selectedNode = null;
+        let INTERSECTED;
+        let cameraTween = null; 
+        const shootingStarsCount = 100;
+
+        function init() {
+            const container = document.getElementById('interactive-canvas');
+            if (!container) { return; }
+            
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 40; 
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+            
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+            scene.add(ambientLight);
+            
+            createBrain();
+            createBackgroundParticles();
+        }
+
+        function createBrain() {
+            // Central Node
+            const centralGeo = new THREE.SphereGeometry(3.5, 32, 32);
+            const centralMat = new THREE.MeshStandardMaterial({
+                color: 0x94a3b8, emissive: 0x94a3b8, emissiveIntensity: 1,
+                metalness: 0.1, roughness: 0.2, transparent: true, opacity: 0.8
+            });
+            const centralNode = new THREE.Mesh(centralGeo, centralMat);
+            centralNode.name = "central";
+            const glowGeo = new THREE.SphereGeometry(3.8, 32, 32);
+            const glowMat = new THREE.MeshBasicMaterial({
+                color: 0x94a3b8, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending
+            });
+            centralNode.add(new THREE.Mesh(glowGeo, glowMat));
+            centralNode.add(new THREE.PointLight(0x94a3b8, 1, 100));
+            nodes.push(centralNode);
+            scene.add(centralNode);
+            
+            // Department Nodes (Nuclei) and their Electrons (Use Cases)
+            const departments = Object.keys(aiData);
+            const numDepartments = departments.length;
+            const radius = 22;
+
+            for(let i=0; i<numDepartments; i++) {
+                const angle = (i / numDepartments) * Math.PI * 2;
+                const x = Math.cos(angle) * radius;
+                const y = (i % 5 - 2) * 7;
+                const z = Math.sin(angle) * radius;
+                
+                // Create the department node (Nucleus)
+                const nodeGeo = new THREE.IcosahedronGeometry(1.1, 2);
+                const nodeMat = new THREE.MeshStandardMaterial({ 
+                    color: 0x3b82f6, emissive: 0x1e3a8a, metalness: 0.3, roughness: 0.6 
+                });
+                const node = new THREE.Mesh(nodeGeo, nodeMat);
+                node.position.set(x, y, z);
+                node.name = departments[i];
+                node.initialPosition = node.position.clone();
+                node.initialColor = node.material.color.clone();
+                node.initialEmissive = node.material.emissive.clone();
+                
+                const mainSprite = createTextSprite(departments[i]);
+                mainSprite.position.y = 2.0;
+                node.add(mainSprite);
+                nodes.push(node);
+                scene.add(node);
+
+                // Create connection line to center
+                const lineMat = new THREE.LineBasicMaterial({ color: 0x2563eb, transparent: true, opacity: 0.3 });
+                const lineGeo = new THREE.BufferGeometry().setFromPoints([centralNode.position, node.position]);
+                const line = new THREE.Line(lineGeo, lineMat);
+                line.userData.node = node;
+                lines.push(line);
+                scene.add(line);
+
+                node.userData.electronSystems = [];
+                const useCases = aiData[departments[i]].cases;
+                useCases.forEach((useCase, j) => {
+                    const orbitRadius = 3.0 + j * 0.8;
+                    const electronSystem = new THREE.Group();
+
+                    // Create the electron
+                    // MODIFIED: Reduced electron size
+                    const electronGeo = new THREE.SphereGeometry(0.2, 16, 16);
+                    const electronMat = new THREE.MeshStandardMaterial({ color: 0x93c5fd, emissive: 0x60a5fa });
+                    const electron = new THREE.Mesh(electronGeo, electronMat);
+                    electron.name = useCase.title;
+                    electron.userData.angle = Math.random() * Math.PI * 2;
+                    electron.userData.speed = 0.004 + Math.random() * 0.003; 
+                    electron.position.x = orbitRadius;
+                    
+                    const electronSprite = createTextSprite(useCase.title, 24);
+                    electronSprite.visible = false;
+                    electron.add(electronSprite);
+                    
+                    // Create the visual orbit path
+                    const orbitPathGeo = new THREE.TorusGeometry(orbitRadius, 0.01, 8, 64);
+                    const orbitPathMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.4 });
+                    const orbitPath = new THREE.Mesh(orbitPathGeo, orbitPathMat);
+                    orbitPath.rotation.x = Math.PI / 2;
+                    orbitPath.visible = false;
+
+                    electronSystem.add(electron);
+                    electronSystem.add(orbitPath);
+
+                    electronSystem.rotation.x = j * (Math.PI / useCases.length / 1.5) + Math.PI / 8;
+                    electronSystem.rotation.z = j * (Math.PI / useCases.length / 2);
+
+                    node.add(electronSystem);
+                    node.userData.electronSystems.push(electronSystem);
+                });
+            }
+        }
+
+        function createTextSprite(message, fontSize = 36) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            const padding = 10;
+            context.font = `600 ${fontSize}px Inter, sans-serif`;
+            const metrics = context.measureText(message);
+            const textWidth = metrics.width;
+
+            canvas.width = textWidth + padding * 2;
+            canvas.height = fontSize + padding * 2;
+            
+            context.fillStyle = 'rgba(10, 15, 25, 0.7)';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            
+            context.font = `600 ${fontSize}px Inter, sans-serif`;
+            context.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            context.fillText(message, padding, fontSize + padding / 2);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMaterial = new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true, sizeAttenuation: true });
+            const sprite = new THREE.Sprite(spriteMaterial);
+            
+            const scaleFactor = fontSize === 36 ? 40 : 80;
+            sprite.scale.set(canvas.width / scaleFactor, canvas.height / scaleFactor, 1.0);
+            return sprite;
+        }
+
+        function createBackgroundParticles() {
+            const createGroup = (count, color, size, speed) => {
+                const positions = new Float32Array(count * 3);
+                for(let i = 0; i < count * 3; i++) {
+                    positions[i] = (Math.random() - 0.5) * 400;
+                }
+                const geo = new THREE.BufferGeometry();
+                geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                const mat = new THREE.PointsMaterial({ color, size, transparent: true, opacity: 0.8, depthTest: false });
+                const points = new THREE.Points(geo, mat);
+                points.userData = { speed };
+                scene.add(points);
+                return points;
+            };
+
+            particles = createGroup(6000, 0x475569, 0.08, 0.01); 
+            nebula = createGroup(1500, 0x1e3a8a, 0.25, 0.03);    
+            twinklingStars = createGroup(2500, 0xffffff, 0.1, 0.005); 
+
+            const shootingStarsGeo = new THREE.BufferGeometry();
+            const shootingStarsPos = new Float32Array(shootingStarsCount * 3);
+            const shootingStarsVel = new Float32Array(shootingStarsCount * 3);
+            for (let i = 0; i < shootingStarsCount; i++) {
+                const i3 = i * 3;
+                shootingStarsPos[i3] = (Math.random() - 0.5) * 300;
+                shootingStarsPos[i3 + 1] = (Math.random() - 0.5) * 200;
+                shootingStarsPos[i3 + 2] = (Math.random() - 0.5) * 200;
+                shootingStarsVel[i3] = (Math.random() * 0.4 + 0.2);
+                shootingStarsVel[i3 + 1] = (Math.random() - 0.5) * 0.05;
+            }
+            shootingStarsGeo.setAttribute('position', new THREE.BufferAttribute(shootingStarsPos, 3));
+            shootingStarsGeo.setAttribute('velocity', new THREE.BufferAttribute(shootingStarsVel, 3));
+            const shootingStarsMat = new THREE.PointsMaterial({
+                color: 0x93c5fd, size: 0.3, transparent: true, opacity: 0.8,
+                blending: THREE.AdditiveBlending, sizeAttenuation: true
+            });
+            shootingStars = new THREE.Points(shootingStarsGeo, shootingStarsMat);
+            scene.add(shootingStars);
+        }
+        
+        function createPulse(startNode, endNode) {
+            const pulseGeo = new THREE.SphereGeometry(0.2, 8, 8);
+            const pulseMat = new THREE.MeshBasicMaterial({ color: 0x93c5fd, transparent: true, opacity: 1 });
+            const pulse = new THREE.Mesh(pulseGeo, pulseMat);
+            pulse.userData = { start: startNode.position.clone(), end: endNode.position.clone(), startTime: Date.now() };
+            pulse.position.copy(pulse.userData.start);
+            scene.add(pulse);
+            pulseParticles.push(pulse);
+        }
+
+        function startCameraTween(targetPosition, targetLookAt, onComplete = null) {
+            const startPos = camera.position.clone();
+            const startQuat = camera.quaternion.clone();
+            const tempCam = camera.clone();
+            tempCam.position.copy(targetPosition);
+            tempCam.lookAt(targetLookAt);
+            const endQuat = tempCam.quaternion;
+            cameraTween = {
+                startPos, endPos: targetPosition, startQuat, endQuat,
+                startTime: Date.now(), duration: 2200, onComplete
+            };
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const timeSlow = Date.now() * 0.0001;
+
+            if (cameraTween) {
+                const t = Math.min(1, (Date.now() - cameraTween.startTime) / cameraTween.duration);
+                const easedT = 0.5 * (1 - Math.cos(Math.PI * t));
+                camera.position.lerpVectors(cameraTween.startPos, cameraTween.endPos, easedT);
+                camera.quaternion.slerpQuaternions(cameraTween.startQuat, cameraTween.endQuat, easedT);
+                if (t >= 1) {
+                    if (cameraTween.onComplete) {
+                        cameraTween.onComplete();
+                    }
+                    cameraTween = null;
+                }
+            } else if (!selectedNode) {
+                scene.rotation.y += 0.0005;
+            }
+
+            nodes.forEach((node) => {
+                if (node.name !== 'central' && node.userData.electronSystems) {
+                    node.userData.electronSystems.forEach(system => {
+                        const electron = system.children[0];
+                        const sprite = electron.children[0];
+                        electron.userData.angle += electron.userData.speed;
+                        const radius = system.children[1].geometry.parameters.radius;
+
+                        electron.position.x = Math.cos(electron.userData.angle) * radius;
+                        electron.position.z = Math.sin(electron.userData.angle) * radius;
+                        electron.position.y = 0;
+                        
+                        if (node === selectedNode) {
+                            sprite.lookAt(camera.position);
+                            const direction = electron.position.clone().normalize();
+                            sprite.position.copy(direction.multiplyScalar(0.8));
+                        }
+                    });
+                    if (node.children[0]) {
+                        node.children[0].lookAt(camera.position);
+                    }
+                }
+            });
+
+            lines.forEach(line => {
+                const pos = line.userData.node.position;
+                line.geometry.attributes.position.setXYZ(1, pos.x, pos.y, pos.z);
+                line.geometry.attributes.position.needsUpdate = true;
+            });
+
+            particles.rotation.y = timeSlow * particles.userData.speed;
+            nebula.rotation.y = timeSlow * nebula.userData.speed;
+            nebula.rotation.x = timeSlow * nebula.userData.speed * 0.5;
+            if (twinklingStars) twinklingStars.rotation.y = timeSlow * twinklingStars.userData.speed;
+            
+            if (shootingStars) {
+                const positions = shootingStars.geometry.attributes.position;
+                const velocities = shootingStars.geometry.attributes.velocity;
+                for (let i = 0; i < shootingStarsCount; i++) {
+                    const i3 = i * 3;
+                    positions.array[i3] += velocities.array[i3];
+                    positions.array[i3 + 1] += velocities.array[i3 + 1];
+                    if (positions.array[i3] > 150) {
+                        positions.array[i3] = -150;
+                        positions.array[i3 + 1] = (Math.random() - 0.5) * 200;
+                    }
+                }
+                positions.needsUpdate = true;
+            }
+
+            pulseParticles.forEach((pulse, index) => {
+                const progress = Math.min((Date.now() - pulse.userData.startTime) / 1200, 1);
+                pulse.position.lerpVectors(pulse.userData.start, pulse.userData.end, progress);
+                pulse.material.opacity = 1 - progress;
+                if (progress >= 1) {
+                    scene.remove(pulse);
+                    pulseParticles.splice(index, 1);
+                }
+            });
+            
+            renderer.render(scene, camera);
+        }
+        
+        function selectNode(node) {
+            if (selectedNode) {
+                resetSelection(false); 
+            }
+            selectedNode = node;
+            
+            const onZoomComplete = () => {
+                nodes.forEach(n => { if (n !== selectedNode && n.name !== 'central') n.visible = false; });
+                lines.forEach(l => l.userData.node !== selectedNode ? l.visible = false : l.visible = true);
+            };
+
+            selectedNode.visible = true;
+            selectedNode.material.color.set(0x60a5fa); // highlight color
+            selectedNode.material.emissive.set(0x3b82f6); // base color
+            selectedNode.scale.set(1.8, 1.8, 1.8);
+            
+            if (selectedNode.userData.electronSystems) {
+                selectedNode.userData.electronSystems.forEach(system => {
+                    system.children[0].children[0].visible = true; // electron sprite
+                    system.children[1].visible = true; // orbit path
+                });
+            }
+
+            const offset = new THREE.Vector3(0, 2.5, 22); 
+            const cameraPos = node.position.clone().add(offset);
+            startCameraTween(cameraPos, node.position, onZoomComplete);
+            
+            openPanel(node.name);
+        }
+        
+        function resetSelection(moveCamera = true) {
+            nodes.forEach(n => { n.visible = true; });
+            lines.forEach(l => { l.visible = true; });
+
+            if(selectedNode) {
+                selectedNode.material.color.set(selectedNode.initialColor);
+                selectedNode.material.emissive.set(selectedNode.initialEmissive);
+                selectedNode.scale.set(1, 1, 1);
+
+                if (selectedNode.userData.electronSystems) {
+                    selectedNode.userData.electronSystems.forEach(system => {
+                        const sprite = system.children[0].children[0];
+                        sprite.visible = false;
+                        sprite.position.set(0, 0, 0); 
+                        system.children[1].visible = false;
+                    });
+                }
+            }
+            selectedNode = null;
+            
+            if(moveCamera) {
+                startCameraTween(new THREE.Vector3(0, 0, 40), scene.position);
+                closePanel();
+            }
+        }
+
+        function openPanel(departmentName) {
+            const data = aiData[departmentName];
+            if (!data) return;
+
+            const contentEl = document.getElementById('panel-content');
+            contentEl.innerHTML = `
+                <div class="flex items-center gap-4 mb-4">
+                     <div class="flex-shrink-0 w-12 h-12 bg-blue-900/50 text-blue-300 rounded-lg flex items-center justify-center">${data.icon}</div>
+                     <div>
+                         <h2 class="text-3xl font-bold text-blue-400 title-glow">${departmentName}</h2>
+                     </div>
+                </div>
+                <p class="text-slate-300 mb-8">Cas d'usage de l'IA pour le département ${departmentName}.</p>
+                <div class="space-y-4">
+                    ${data.cases.map((useCase) => `
+                        <div class="use-case-card glassmorphism rounded-lg border border-transparent hover:border-blue-500/50 transition-all duration-300" onclick="toggleUseCase(this)">
+                            <div class="p-4 cursor-pointer flex justify-between items-center">
+                                <h3 class="text-lg font-semibold text-white">${useCase.title}</h3>
+                                <svg class="chevron w-5 h-5 text-slate-400 transition-transform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                            </div>
+                            <div class="details px-4">
+                                <div class="border-t border-white/10 pt-4">
+                                    <p class="text-slate-400 mb-2"><strong class="text-slate-200 font-medium">Problème :</strong> ${useCase.problem}</p>
+                                    <p class="text-slate-400 mb-2"><strong class="text-slate-200 font-medium">Solution :</strong> ${useCase.solution}</p>
+                                    <p class="text-slate-400 mb-4"><strong class="text-green-400 font-medium">Apport de l'IA :</strong> ${useCase.apportIA}</p>
+                                    
+                                    <h4 class="font-semibold text-slate-200 mb-3">KPIs Clés :</h4>
+                                    <div class="grid grid-cols-2 gap-3 mb-4">
+                                        ${useCase.kpis.map(kpi => {
+                                            const colorClass = kpi.type === 'increase' ? 'text-green-400' : 'text-red-400';
+                                            return `<div class="glassmorphism p-3 rounded-md text-center">
+                                                <div class="kpi-value text-2xl font-bold ${colorClass}" data-target="${kpi.value}">0%</div>
+                                                <div class="text-xs text-slate-400">${kpi.label}</div>
+                                            </div>`
+                                        }).join('')}
+                                    </div>
+
+                                    <h4 class="font-semibold text-slate-200 mb-3 mt-4">Technologies & Exemples:</h4>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        ${useCase.aiType.map(type => `<span class="bg-slate-700 text-xs font-medium px-2 py-1 rounded-full">${type}</span>`).join('')}
+                                        ${useCase.aiTech.map(tech => `<span class="bg-blue-900 text-blue-300 text-xs font-medium px-2 py-1 rounded-full">${tech}</span>`).join('')}
+                                        ${useCase.videoUrl ? `
+                                            <a href="${useCase.videoUrl}" target="_blank" class="flex items-center gap-1.5 text-sm text-blue-400 hover:text-blue-300 transition-colors pl-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12.33a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2.33"></path><path d="m22 9-4 3 4 3V9Z"></path></svg>
+                                                Voir un exemple
+                                            </a>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>`;
+            document.getElementById('content-panel').classList.remove('-translate-x-full');
+            document.getElementById('show-conclusion-btn').classList.remove('hidden');
+        }
+        
+        function animateKPIs(card) {
+            card.querySelectorAll('.kpi-value').forEach(kpiEl => {
+                const targetValue = kpiEl.dataset.target;
+                const numericTarget = parseFloat(targetValue.replace(/[+%]/g, ''));
+                const symbol = targetValue.replace(/[0-9.,-]/g, '');
+                let startTime = null;
+                function step(currentTime) {
+                    if (!startTime) startTime = currentTime;
+                    const progress = Math.min((currentTime - startTime) / 1500, 1);
+                    const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+                    const currentValue = Math.floor(easeOutCubic * numericTarget);
+                    kpiEl.textContent = (targetValue.match(/^[+-]/) ? targetValue.charAt(0) : '') + currentValue + symbol;
+                    if (progress < 1) requestAnimationFrame(step);
+                }
+                requestAnimationFrame(step);
+            });
+        }
+        
+        window.toggleUseCase = function(element) {
+            const wasOpen = element.classList.contains('open');
+            document.querySelectorAll('.use-case-card.open').forEach(openCard => {
+                openCard.classList.remove('open');
+                openCard.querySelector('.chevron').classList.remove('rotate-180');
+            });
+            if (!wasOpen) {
+                element.classList.add('open');
+                element.querySelector('.chevron').classList.add('rotate-180');
+                animateKPIs(element);
+            }
+        }
+
+        function closePanel() {
+            document.getElementById('content-panel').classList.add('-translate-x-full');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            init();
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            const canvasEl = document.getElementById('interactive-canvas');
+
+            canvasEl.addEventListener('mousemove', event => {
+                if (selectedNode) return; 
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(nodes.filter(n => n.name !== 'central'));
+                if (intersects.length > 0) {
+                    const obj = intersects[0].object;
+                    if (INTERSECTED !== obj) {
+                        if (INTERSECTED) {
+                             INTERSECTED.material.emissive.setHex(INTERSECTED.initialEmissive.getHex());
+                             INTERSECTED.scale.set(1,1,1);
+                        }
+                        INTERSECTED = obj;
+                        INTERSECTED.material.emissive.setHex(0x60a5fa); // highlight color
+                        INTERSECTED.scale.set(1.5, 1.5, 1.5);
+                        document.body.style.cursor = 'pointer';
+                    }
+                } else {
+                    if (INTERSECTED) {
+                        INTERSECTED.material.emissive.setHex(INTERSECTED.initialEmissive.getHex());
+                        INTERSECTED.scale.set(1,1,1);
+                    }
+                    INTERSECTED = null;
+                    document.body.style.cursor = 'auto';
+                }
+            });
+
+            canvasEl.addEventListener('click', event => {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(nodes.filter(n => n.name !== 'central'));
+                if (intersects.length > 0 && selectedNode !== intersects[0].object) {
+                    selectNode(intersects[0].object);
+                }
+            });
+            
+            document.getElementById('start-btn').addEventListener('click', () => {
+                document.getElementById('intro-panel').classList.add('opacity-0', 'pointer-events-none');
+            });
+            
+            document.getElementById('close-panel-btn').addEventListener('click', () => resetSelection(true));
+
+            document.getElementById('show-conclusion-btn').addEventListener('click', () => {
+                resetSelection(true);
+                lines.forEach((line, i) => {
+                    setTimeout(() => {
+                        line.material.color.set(0x60a5fa);
+                        line.material.opacity = 0.8;
+                        createPulse(nodes[0], line.userData.node);
+                    }, i * 50);
+                });
+                nodes.forEach(node => {
+                    if(node.name !== 'central') {
+                        node.material.color.set(0x93c5fd);
+                        node.scale.set(1.2,1.2,1.2);
+                    }
+                });
+                startCameraTween(new THREE.Vector3(0,0,45), scene.position);
+                const conclusionPanel = document.getElementById('conclusion-panel');
+                conclusionPanel.classList.remove('opacity-0', 'pointer-events-none');
+                conclusionPanel.classList.add('opacity-100');
+                conclusionPanel.querySelectorAll('.title-glow, p, button').forEach((el, i) => {
+                    el.style.animation = `fadeIn 0.8s ease-out ${i * 0.2}s forwards`;
+                    el.style.opacity = 0;
+                });
+            });
+            
+            document.getElementById('restart-btn').addEventListener('click', () => {
+                lines.forEach(line => {
+                    line.material.color.set(0x2563eb);
+                    line.material.opacity = 0.3;
+                });
+                resetSelection(true);
+                const conclusionPanel = document.getElementById('conclusion-panel');
+                conclusionPanel.classList.remove('opacity-100');
+                conclusionPanel.classList.add('opacity-0', 'pointer-events-none');
+                document.getElementById('show-conclusion-btn').classList.add('hidden');
+            });
+        });
+    </script>
+</body>
+</html>
