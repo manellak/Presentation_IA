@@ -553,9 +553,15 @@
                 });
             }
 
-            const offset = new THREE.Vector3(0, 2.5, 22); 
-            const cameraPos = node.position.clone().add(offset);
-            startCameraTween(cameraPos, node.position, onZoomComplete);
+            // MODIFIED: New camera logic for better centering
+            // Get the direction vector from the origin to the node
+            const direction = node.position.clone().normalize();
+            // Position the camera further out along the same line, to keep the node centered
+            const cameraDistance = node.position.length() + 20; 
+            const cameraPos = direction.multiplyScalar(cameraDistance);
+            const lookAtPos = node.position; // Ensure we are looking directly at the node
+
+            startCameraTween(cameraPos, lookAtPos, onZoomComplete);
             
             openPanel(node.name);
         }
